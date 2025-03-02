@@ -5,6 +5,34 @@
 * [Docker](https://www.docker.com/).
 * [uv](https://docs.astral.sh/uv/) for Python package and environment management.
 
+## Python Version Compatibility
+
+This project requires Python 3.11 due to compatibility issues with some dependencies (specifically `httptools` 0.6.1). If you encounter build errors related to Python version compatibility, follow these steps:
+
+1. Install Python 3.11:
+```console
+$ sudo add-apt-repository ppa:deadsnakes/ppa
+$ sudo apt update
+$ sudo apt install python3.11 python3.11-venv
+```
+
+2. Create a new virtual environment with Python 3.11:
+```console
+$ python3.11 -m venv .venv
+```
+
+3. Activate the virtual environment:
+```console
+$ source .venv/bin/activate
+```
+
+4. Install dependencies:
+```console
+$ uv sync.
+```
+
+Note: Make sure your editor is using the correct Python virtual environment from `.venv/bin/python`.
+
 ## Docker Compose
 
 Start the local development environment with Docker Compose following the guide in [../development.md](../development.md).

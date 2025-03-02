@@ -3,9 +3,6 @@ import uuid
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
-# For backward compatibility
-from .models.auth.models import *  # noqa: F403
-
 # Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
@@ -117,7 +114,7 @@ class NewPassword(SQLModel):
 
 
 # Re-export everything
-__all__ = [  # noqa: F405
+__all__ = [
     'User',
     'UserBase',
     'UserCreate',
