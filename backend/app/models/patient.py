@@ -5,7 +5,7 @@ from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
 
 from .enums import PatientStatus
-from .user import Caregiver, Family
+from .healthcare_member import Caregiver, Family
 
 # Base Patient Model
 class PatientBase(SQLModel):
@@ -30,9 +30,10 @@ class Patient(PatientBase, table=True):
 # Patient-Caregiver Relationship
 class PatientCaregiver(SQLModel, table=True):
     """Relationship model between patients and caregivers."""
+    __tablename__ = "patient_caregivers"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     patient_id: uuid.UUID = Field(foreign_key="patient.id")
-    caregiver_id: uuid.UUID = Field(foreign_key="caregiver.id")
+    caregiver_id: uuid.UUID = Field(foreign_key="caregivers.id")
     start_date: date = Field(default_factory=date.today)
     end_date: Optional[date] = Field(default=None)
     is_primary: bool = Field(default=False)
@@ -44,9 +45,10 @@ class PatientCaregiver(SQLModel, table=True):
 # Patient-Family Relationship
 class PatientFamily(SQLModel, table=True):
     """Relationship model between patients and family members."""
+    __tablename__ = "patient_family_members"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     patient_id: uuid.UUID = Field(foreign_key="patient.id")
-    family_id: uuid.UUID = Field(foreign_key="family.id")
+    family_id: uuid.UUID = Field(foreign_key="family_members.id")
     is_primary_contact: bool = Field(default=False)
     notes: Optional[str] = Field(default=None)
     

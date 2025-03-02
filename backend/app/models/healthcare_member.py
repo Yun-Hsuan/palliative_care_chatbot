@@ -6,17 +6,18 @@ from sqlmodel import Field, SQLModel
 
 from .enums import UserRole
 
-# Base User Model
-class UserBase(SQLModel):
-    """Base user model with common fields for all user types."""
+# Base Healthcare Member Model
+class HealthcareMemberBase(SQLModel):
+    """Base model with common fields for all healthcare system members."""
     email: EmailStr = Field(unique=True, index=True)
     full_name: str | None
     is_active: bool = True
     is_superuser: bool = False
     role: UserRole
 
-class User(UserBase, table=True):
-    """Main user model for database storage."""
+class HealthcareMember(HealthcareMemberBase, table=True):
+    """Main healthcare member model for database storage."""
+    __tablename__ = "healthcare_members"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
 
@@ -30,8 +31,9 @@ class CaregiverBase(SQLModel):
 
 class Caregiver(CaregiverBase, table=True):
     """Caregiver model for database storage."""
+    __tablename__ = "caregivers"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id")
+    member_id: uuid.UUID = Field(foreign_key="healthcare_members.id")
 
 # Family Model
 class FamilyBase(SQLModel):
@@ -40,8 +42,9 @@ class FamilyBase(SQLModel):
 
 class Family(FamilyBase, table=True):
     """Family member model for database storage."""
+    __tablename__ = "family_members"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id")
+    member_id: uuid.UUID = Field(foreign_key="healthcare_members.id")
 
 # Medical Team Member Model
 class MedicalTeamMemberBase(SQLModel):
@@ -53,28 +56,29 @@ class MedicalTeamMemberBase(SQLModel):
 
 class MedicalTeamMember(MedicalTeamMemberBase, table=True):
     """Medical team member model for database storage."""
+    __tablename__ = "medical_team_members"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id")
+    member_id: uuid.UUID = Field(foreign_key="healthcare_members.id")
 
 # API Models for Create/Update Operations
-class UserCreate(UserBase):
-    """Model for creating a new user."""
+class HealthcareMemberCreate(HealthcareMemberBase):
+    """Model for creating a new healthcare member."""
     password: str = Field(min_length=8)
 
-class UserUpdate(SQLModel):
-    """Model for updating user information."""
+class HealthcareMemberUpdate(SQLModel):
+    """Model for updating healthcare member information."""
     email: EmailStr | None = None
     full_name: str | None = None
     password: str | None = None
 
 class CaregiverCreate(CaregiverBase):
     """Model for creating a new caregiver."""
-    user: UserCreate
+    member: HealthcareMemberCreate
 
 class FamilyCreate(FamilyBase):
     """Model for creating a new family member."""
-    user: UserCreate
+    member: HealthcareMemberCreate
 
 class MedicalTeamMemberCreate(MedicalTeamMemberBase):
     """Model for creating a new medical team member."""
-    user: UserCreate 
+    member: HealthcareMemberCreate 

@@ -5,13 +5,15 @@ from typing import Optional
 from sqlmodel import Field, Relationship, SQLModel
 
 from .enums import ConversationStatus, ConversationType, MessageType, DiagnosisStatus
+from .healthcare_member import HealthcareMember
 
 
 class Conversation(SQLModel, table=True):
     """Conversation model for tracking dialogue sessions with patients"""
+    __tablename__ = "conversations"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     patient_id: uuid.UUID = Field(foreign_key="patient.id", nullable=False)
-    initiator_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    initiator_id: uuid.UUID = Field(foreign_key="healthcare_members.id", nullable=False)
     start_time: datetime = Field(nullable=False)
     end_time: datetime | None = Field(default=None)
     status: ConversationStatus = Field(nullable=False)
@@ -23,30 +25,32 @@ class Conversation(SQLModel, table=True):
 
     # Relationships
     patient: "Patient" = Relationship(back_populates="conversations")
-    initiator: "User" = Relationship(back_populates="initiated_conversations")
+    initiator: HealthcareMember = Relationship(back_populates="initiated_conversations")
     messages: list["Message"] = Relationship(back_populates="conversation", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     symptom_records: list["SymptomRecord"] = Relationship(back_populates="conversation", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
 class Message(SQLModel, table=True):
     """Message model for storing individual messages in conversations"""
+    __tablename__ = "messages"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    conversation_id: uuid.UUID = Field(foreign_key="conversation.id", nullable=False)
-    sender_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    conversation_id: uuid.UUID = Field(foreign_key="conversations.id", nullable=False)
+    sender_id: uuid.UUID = Field(foreign_key="healthcare_members.id", nullable=False)
     content: str = Field(nullable=False)
     timestamp: datetime = Field(nullable=False)
     message_type: MessageType = Field(nullable=False)
 
     # Relationships
     conversation: Conversation = Relationship(back_populates="messages")
-    sender: "User" = Relationship(back_populates="messages")
+    sender: HealthcareMember = Relationship(back_populates="messages")
 
 
 class Diagnosis(SQLModel, table=True):
     """Diagnosis model for recording patient diagnostic information"""
+    __tablename__ = "diagnoses"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     patient_id: uuid.UUID = Field(foreign_key="patient.id", nullable=False)
-    created_by_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    created_by_id: uuid.UUID = Field(foreign_key="healthcare_members.id", nullable=False)
     created_at: datetime = Field(nullable=False)
     symptoms_summary: str = Field(nullable=False)
     ai_suggestion: str = Field(nullable=False)
@@ -56,7 +60,7 @@ class Diagnosis(SQLModel, table=True):
 
     # Relationships
     patient: "Patient" = Relationship(back_populates="diagnoses")
-    created_by: "User" = Relationship(back_populates="created_diagnoses")
+    created_by: HealthcareMember = Relationship(back_populates="created_diagnoses")
 
 
 # API Models for creation and updates

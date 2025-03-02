@@ -3,19 +3,21 @@ from datetime import datetime
 from typing import Optional, List, Dict
 
 from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import JSON
 
 from .enums import SymptomSeverity
-from .user import User
+from .healthcare_member import HealthcareMember
 from .patient import Patient
 from .conversation import Conversation
 
 # Symptom Record Model
 class SymptomRecord(SQLModel, table=True):
     """Model for recording symptom collection sessions."""
+    __tablename__ = "symptom_records"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     patient_id: uuid.UUID = Field(foreign_key="patient.id")
-    conversation_id: uuid.UUID = Field(foreign_key="conversation.id")
-    recorded_by_id: uuid.UUID = Field(foreign_key="user.id")
+    conversation_id: uuid.UUID = Field(foreign_key="conversations.id")
+    recorded_by_id: uuid.UUID = Field(foreign_key="healthcare_members.id")
     recorded_at: datetime = Field(default_factory=datetime.utcnow)
     assessment_datetime: datetime
     note: Optional[str] = None
@@ -24,22 +26,23 @@ class SymptomRecord(SQLModel, table=True):
 
     # Relationships
     patient: Patient = Relationship(back_populates="symptom_records")
-    recorded_by: User = Relationship()
+    recorded_by: HealthcareMember = Relationship()
     conversation: Conversation = Relationship(back_populates="symptom_records")
     details: List["SymptomDetail"] = Relationship(back_populates="symptom_record")
 
 # Symptom Detail Model
 class SymptomDetail(SQLModel, table=True):
     """Model for storing detailed symptom information."""
+    __tablename__ = "symptom_details"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    symptom_record_id: uuid.UUID = Field(foreign_key="symptomrecord.id")
+    symptom_record_id: uuid.UUID = Field(foreign_key="symptom_records.id")
     category: str = Field(max_length=50)  # e.g., "respiratory", "digestive", "pain"
     primary_symptom: str = Field(max_length=100)  # e.g., "cough", "nausea", "headache"
     severity: SymptomSeverity
     duration: str = Field(max_length=50)  # e.g., "3 days", "1 week"
     frequency: str = Field(max_length=50)  # e.g., "continuous", "intermittent"
-    characteristics: Dict = Field(default={})  # Detailed characteristics in JSON format
-    related_symptoms: List[str] = Field(default=[])
+    characteristics: Dict = Field(sa_type=JSON, default={})  # Detailed characteristics in JSON format
+    related_symptoms: List[str] = Field(sa_type=JSON, default=[])
     impact_on_daily_life: int = Field(ge=1, le=5)  # 1-5 scale
 
     # Relationships
@@ -48,22 +51,24 @@ class SymptomDetail(SQLModel, table=True):
 # Symptom Characteristic Model
 class SymptomCharacteristic(SQLModel, table=True):
     """Model for defining characteristics that can be collected for symptoms."""
+    __tablename__ = "symptom_characteristics"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     symptom_category: str = Field(max_length=50)  # Symptom category
     characteristic_key: str = Field(max_length=50)  # Characteristic key (e.g., color, consistency, location)
     name: str = Field(max_length=100)  # Display name of the characteristic
     type: str = Field(max_length=20)  # Data type (text, number, select, multiple)
-    options: Optional[List[str]] = None  # Options for select and multiple types
+    options: Optional[List[str]] = Field(sa_type=JSON, default=None)  # Options for select and multiple types
     required: bool = Field(default=False)  # Whether this characteristic is required
-    follow_up_questions: Optional[List[str]] = None  # Follow-up questions to ask
+    follow_up_questions: Optional[List[str]] = Field(sa_type=JSON, default=None)  # Follow-up questions to ask
 
 # Related Symptom Rule Model
 class RelatedSymptomRule(SQLModel, table=True):
     """Model for defining rules to identify related symptoms."""
+    __tablename__ = "related_symptom_rules"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     primary_symptom: str = Field(max_length=100)  # Primary symptom that triggers the rule
-    related_symptoms: List[str] = Field(default=[])  # List of potentially related symptoms
-    condition: Dict = Field(default={})  # Trigger conditions in JSON format
+    related_symptoms: List[str] = Field(sa_type=JSON, default=[])  # List of potentially related symptoms
+    condition: Dict = Field(sa_type=JSON, default={})  # Trigger conditions in JSON format
     priority: int = Field(ge=1, le=5)  # Priority for asking follow-up questions
 
 # API Models
