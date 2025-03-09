@@ -1,3 +1,5 @@
+from sqlmodel import SQLModel
+
 from .auth.models import (
     User,
     UserBase,
