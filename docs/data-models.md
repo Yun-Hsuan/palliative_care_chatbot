@@ -563,51 +563,82 @@ backend/app/
 - Document all API endpoints
 - Maintain consistent error handling
 
-## Development Log
+## Developer's Log
 
-### 2024-03-02
+### Docker Configuration Optimization Suggestions (2025-03-03)
 
-#### Database Initialization and Model Testing Progress
+#### 1. Server Configuration Enhancement
+Suggested environment variables to add in backend service for improved configuration flexibility:
+```yaml
+- SERVER_NAME=${DOMAIN?Variable not set}
+- SERVER_HOST=https://${DOMAIN?Variable not set}
+```
+**Benefits**:
+- Better domain identification
+- Simplified URL generation
+- Enhanced CORS configuration
+- Improved SSL certificate management
 
-1. Completed Database Initialization Function Optimization
-   - Implemented `init_db()` function in `app/db/session.py`
-   - Adopted on-demand model importing to reduce unnecessary table creation
-   - Utilized SQLModel's inheritance mechanism for automatic related table creation
+#### 2. Docker Image Tag Management
+Suggested modification for image configuration:
+```yaml
+image: '${DOCKER_IMAGE_BACKEND}:${TAG-latest}'
+```
+**Benefits**:
+- More flexible version control
+- Automatic 'latest' tag usage in development
+- Prevents deployment failures when TAG is not set
+- Easy version switching between environments
 
-2. Implemented Progressive Database Testing Strategy
-   - Created `test_init_db_minor.py` for incremental table creation testing
-   - Successfully tested all core tables in the following order:
-     * `healthcare_members` (including caregivers, family_members, medical_team_members)
-     * `patient` (including patient_caregivers, patient_families)
-     * `conversations` (including messages, diagnoses)
-     * `symptom_records` (including symptom_details, symptom_characteristics, related_symptom_rules)
+#### 3. Future Optimization Considerations
+1. **Health Check Enhancement**
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+```
 
-3. Resolved Complex Data Type Storage Issues
-   - Implemented SQLAlchemy JSON type in `symptom.py` for complex data structures
-   - Modified all Dict and List fields with `sa_type=JSON` parameter
-   - Ensured proper storage of all complex data types in the database
+2. **Resource Management**
+```yaml
+deploy:
+  resources:
+    limits:
+      cpus: '1'
+      memory: 1G
+    reservations:
+      cpus: '0.5'
+      memory: 512M
+```
 
-4. Enhanced Testing Process
-   - Implemented automatic detection of core and related table creation
-   - Added detailed logging output for table creation tracking
-   - Ensured test repeatability and reliability
+3. **Logging Configuration**
+```yaml
+logging:
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+```
 
-5. Database Migration Planning
-   - Completed initial Alembic configuration setup
-   - Made strategic decision to postpone migration management
-   - Will revisit database versioning after core functionality development
-   - Current focus will be on feature implementation and testing
+#### Implementation Recommendations
+1. **Priority Order**:
+   - Complete environment file path restructuring first
+   - Implement health checks second
+   - Add resource management last
 
-#### Current Status
-- All core data models completed and tested
-- Database initialization functionality working properly
-- Complex data type storage issues resolved
-- Test coverage achieved for all major functionalities
-- Basic Alembic configuration prepared for future use
+2. **Testing Strategy**:
+   - Test each change in development environment
+   - Validate in staging before production
+   - Monitor system performance after each change
 
-#### Next Steps
-1. Focus on core feature development and testing
-2. Validate data model design through implementation
-3. Verify relationship mappings in practical use
-4. Return to database migration setup once model structure stabilizes
-5. Implement data validation and integrity checks 
+3. **Documentation Requirements**:
+   - Update deployment guides
+   - Document new environment variables
+   - Create troubleshooting guides for new features
+
+4. **Security Considerations**:
+   - Review environment variable exposure
+   - Implement secrets management
+   - Update security documentation
