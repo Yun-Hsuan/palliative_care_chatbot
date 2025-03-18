@@ -7,12 +7,16 @@ from app.core.config import settings
 engine = create_async_engine(
     str(settings.SQLALCHEMY_DATABASE_URI),
     echo=settings.ENVIRONMENT == "local",  # Only enable echo in local environment
+    pool_pre_ping=True,  # Add connection pool pre-ping
+    pool_size=5,         # Set connection pool size
+    max_overflow=10      # Maximum overflow connection count
 )
 
 # Create async session factory
 async_session = async_sessionmaker(
     engine,
     expire_on_commit=False,
+    autoflush=False      # Disable auto-flush for better performance
 )
 
 # Dependency to get async session
@@ -26,11 +30,9 @@ async def get_session():
 # Initialize database
 async def init_db():
     async with engine.begin() as conn:
-        # Import base models for testing
-        from app.models.healthcare_member import HealthcareMember
-        from app.models.patient import Patient
-        from app.models.conversation import Conversation
-        from app.models.symptom import SymptomRecord
+        # Import required models
+        from app.models.conversation import Conversation, Message
+        from app.models.symptom import SymptomCollection
         
         # Create all tables
         await conn.run_sync(SQLModel.metadata.create_all)

@@ -1,110 +1,69 @@
-import uuid
 from datetime import datetime
-from typing import Optional, List, Dict
+import uuid
+from typing import Optional, Dict, Any
+from sqlmodel import SQLModel, Field, Relationship, JSON
 
-from sqlmodel import Field, SQLModel, Relationship
-from sqlalchemy import JSON
-
-from .enums import SymptomSeverity
-from .healthcare_member import HealthcareMember
-from .patient import Patient
+from .enums import SymptomStatus
 from .conversation import Conversation
 
-# Symptom Record Model
-class SymptomRecord(SQLModel, table=True):
-    """Model for recording symptom collection sessions."""
-    __tablename__ = "symptom_records"
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    patient_id: uuid.UUID = Field(foreign_key="patient.id")
-    conversation_id: uuid.UUID = Field(foreign_key="conversations.id")
-    recorded_by_id: uuid.UUID = Field(foreign_key="healthcare_members.id")
-    recorded_at: datetime = Field(default_factory=datetime.utcnow)
-    assessment_datetime: datetime
-    note: Optional[str] = None
-    collection_order: int  # 1-4 for tracking order in conversation
-    collection_complete: bool = Field(default=False)
+def create_empty_vital_status() -> Dict[str, Any]:
+    """創建空的生命體徵狀態"""
+    return {
+        "age": None,
+        "gender": None,
+        "temperature": None,
+        "systolic_bp": None,
+        "diastolic_bp": None
+    }
 
-    # Relationships
-    patient: Patient = Relationship(back_populates="symptom_records")
-    recorded_by: HealthcareMember = Relationship()
-    conversation: Conversation = Relationship(back_populates="symptom_records")
-    details: List["SymptomDetail"] = Relationship(back_populates="symptom_record")
+def create_empty_symptom() -> Dict[str, Any]:
+    """創建空的症狀記錄"""
+    return {
+        "symptom_name": None,           # 症狀名稱
+        "symptom_status": "null",       # 症狀狀態 (yes/no/null)
+        "severity": None,               # 症狀嚴重程度 (mild/moderate/severe)
+        "duration": None,               # 症狀持續時間
+        "description": None             # 症狀詳細描述
+    }
 
-# Symptom Detail Model
-class SymptomDetail(SQLModel, table=True):
-    """Model for storing detailed symptom information."""
-    __tablename__ = "symptom_details"
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    symptom_record_id: uuid.UUID = Field(foreign_key="symptom_records.id")
-    category: str = Field(max_length=50)  # e.g., "respiratory", "digestive", "pain"
-    primary_symptom: str = Field(max_length=100)  # e.g., "cough", "nausea", "headache"
-    severity: SymptomSeverity
-    duration: str = Field(max_length=50)  # e.g., "3 days", "1 week"
-    frequency: str = Field(max_length=50)  # e.g., "continuous", "intermittent"
-    characteristics: Dict = Field(sa_type=JSON, default={})  # Detailed characteristics in JSON format
-    related_symptoms: List[str] = Field(sa_type=JSON, default=[])
-    impact_on_daily_life: int = Field(ge=1, le=5)  # 1-5 scale
+def create_empty_collection() -> Dict[str, Any]:
+    """創建完整的空收集結構"""
+    return {
+        "vital_status": create_empty_vital_status(),
+        "symptom_1": create_empty_symptom(),
+        "symptom_2": create_empty_symptom(),
+        "symptom_3": create_empty_symptom(),
+        "symptom_4": create_empty_symptom()
+    }
 
-    # Relationships
-    symptom_record: SymptomRecord = Relationship(back_populates="details")
+class VitalStatus(SQLModel):
+    """生命體徵模型"""
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    temperature: Optional[float] = None
+    systolic_bp: Optional[int] = None  # 收縮壓
+    diastolic_bp: Optional[int] = None  # 舒張壓
 
-# Symptom Characteristic Model
-class SymptomCharacteristic(SQLModel, table=True):
-    """Model for defining characteristics that can be collected for symptoms."""
-    __tablename__ = "symptom_characteristics"
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    symptom_category: str = Field(max_length=50)  # Symptom category
-    characteristic_key: str = Field(max_length=50)  # Characteristic key (e.g., color, consistency, location)
-    name: str = Field(max_length=100)  # Display name of the characteristic
-    type: str = Field(max_length=20)  # Data type (text, number, select, multiple)
-    options: Optional[List[str]] = Field(sa_type=JSON, default=None)  # Options for select and multiple types
-    required: bool = Field(default=False)  # Whether this characteristic is required
-    follow_up_questions: Optional[List[str]] = Field(sa_type=JSON, default=None)  # Follow-up questions to ask
-
-# Related Symptom Rule Model
-class RelatedSymptomRule(SQLModel, table=True):
-    """Model for defining rules to identify related symptoms."""
-    __tablename__ = "related_symptom_rules"
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    primary_symptom: str = Field(max_length=100)  # Primary symptom that triggers the rule
-    related_symptoms: List[str] = Field(sa_type=JSON, default=[])  # List of potentially related symptoms
-    condition: Dict = Field(sa_type=JSON, default={})  # Trigger conditions in JSON format
-    priority: int = Field(ge=1, le=5)  # Priority for asking follow-up questions
-
-# API Models
-class SymptomRecordCreate(SQLModel):
-    """Model for creating a new symptom record."""
-    patient_id: uuid.UUID
-    conversation_id: uuid.UUID
-    assessment_datetime: datetime
-    note: Optional[str] = None
-    collection_order: int
-
-class SymptomDetailCreate(SQLModel):
-    """Model for creating a new symptom detail."""
-    symptom_record_id: uuid.UUID
-    category: str
-    primary_symptom: str
-    severity: SymptomSeverity
-    duration: str
-    frequency: str
-    characteristics: Dict = Field(default={})
-    related_symptoms: List[str] = Field(default=[])
-    impact_on_daily_life: int
-
-class SymptomCharacteristicCreate(SQLModel):
-    """Model for creating a new symptom characteristic."""
-    symptom_category: str
-    characteristic_key: str
+class SymptomEntry(SQLModel):
+    """症狀條目模型"""
     name: str
-    type: str
-    options: Optional[List[str]] = None
-    required: bool = False
-    follow_up_questions: Optional[List[str]] = None
+    status: SymptomStatus = SymptomStatus.NULL
+    description: Optional[str] = None
 
-class RelatedSymptomRuleCreate(SQLModel):
-    """Model for creating a new related symptom rule."""
-    primary_symptom: str
-    related_symptoms: List[str]
-    condition: Dict
-    priority: int 
+class SymptomCollection(SQLModel, table=True):
+    """症狀收集模型"""
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    conversation_id: uuid.UUID = Field(foreign_key="conversation.id", unique=True, nullable=False)
+    line_user_id: str = Field(index=True, nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    
+    # 使用 JSON 欄位儲存結構化數據
+    collection_data: Dict = Field(
+        default_factory=create_empty_collection,
+        sa_type=JSON
+    )
+    is_complete: bool = Field(default=False, nullable=False)
+
+    # 關聯
+    conversation: Conversation = Relationship(back_populates="symptom_collection") 

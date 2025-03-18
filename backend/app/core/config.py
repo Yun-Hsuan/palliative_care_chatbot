@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import secrets
 import warnings
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Optional
 
 from pydantic import (
     AnyUrl,
@@ -12,6 +12,7 @@ from pydantic import (
     PostgresDsn,
     computed_field,
     model_validator,
+    Field,
 )
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -126,6 +127,60 @@ class Settings(BaseSettings):
     EMAIL_TEST_USER: EmailStr = "test@example.com"
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
+
+    # LINE Bot 設定
+    LINE_CHANNEL_ACCESS_TOKEN: str = Field(
+        default="",
+        description="LINE Channel Access Token for bot authentication"
+    )
+    LINE_CHANNEL_SECRET: str = Field(
+        default="",
+        description="LINE Channel Secret for webhook verification"
+    )
+
+    @computed_field
+    @property
+    def line_bot_enabled(self) -> bool:
+        """檢查 LINE Bot 是否已正確配置"""
+        return bool(self.LINE_CHANNEL_ACCESS_TOKEN and self.LINE_CHANNEL_SECRET)
+
+    @model_validator(mode="after")
+    def validate_line_bot_config(self) -> Self:
+        """驗證 LINE Bot 配置"""
+        if self.ENVIRONMENT != "local":  # 在非本地環境中強制要求配置
+            if not self.LINE_CHANNEL_ACCESS_TOKEN:
+                raise ValueError("LINE_CHANNEL_ACCESS_TOKEN must be set in non-local environment")
+            if not self.LINE_CHANNEL_SECRET:
+                raise ValueError("LINE_CHANNEL_SECRET must be set in non-local environment")
+        return self
+
+    # Azure OpenAI Configuration
+    AZURE_OPENAI_API_KEY: str | None = Field(
+        default=None,
+        description="Azure OpenAI API key"
+    )
+    AZURE_OPENAI_ENDPOINT: str | None = Field(
+        default=None,
+        description="Azure OpenAI endpoint URL"
+    )
+    AZURE_OPENAI_DEPLOYMENT_NAME: str | None = Field(
+        default=None,
+        description="Azure OpenAI deployment name"
+    )
+    AZURE_OPENAI_VERSION: str = Field(
+        default="2024-05-01-preview",
+        description="Azure OpenAI API version"
+    )
+
+    @property
+    def aoai_enabled(self) -> bool:
+        """Check if Azure OpenAI service is configured"""
+        return all([
+            self.AZURE_OPENAI_API_KEY,
+            self.AZURE_OPENAI_ENDPOINT,
+            self.AZURE_OPENAI_DEPLOYMENT_NAME,
+            self.AZURE_OPENAI_VERSION
+        ])
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

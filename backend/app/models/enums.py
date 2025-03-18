@@ -1,40 +1,24 @@
-from enum import IntEnum
+from enum import Enum, IntEnum
 
-class UserRole(IntEnum):
-    ADMIN = 1
-    CAREGIVER = 2
-    FAMILY = 3
-    MEDICAL_TEAM = 4
+class ConversationType(str, Enum):
+    """對話類型"""
+    SYMPTOM_COLLECTION = "symptom_collection"  # 症狀收集
+    GENERAL = "general"                        # 一般對話
 
-class PatientStatus(IntEnum):
-    ACTIVE = 1          # Currently under care
-    HOSPITALIZED = 2    # Admitted to hospital
-    DISCHARGED = 3      # Discharged from care
-    DECEASED = 4        # Deceased
+class ConversationStatus(str, Enum):
+    """對話狀態"""
+    ACTIVE = "active"          # 進行中
+    COMPLETED = "completed"    # 已完成
+    INTERRUPTED = "interrupted"  # 已中斷
 
-class ConversationType(IntEnum):
-    GENERAL = 1         # General conversation
-    SYMPTOM_COLLECTION = 2  # Symptom collection session
+class MessageType(str, Enum):
+    """消息類型"""
+    USER = "user"        # 用戶消息
+    SYSTEM = "system"    # 系統消息
+    BOT = "bot"         # 機器人回應
 
-class ConversationStatus(IntEnum):
-    IN_PROGRESS = 1     # Conversation ongoing
-    COMPLETED = 2       # Conversation completed
-    INTERRUPTED = 3     # Conversation interrupted
-
-class MessageType(IntEnum):
-    USER_TEXT = 1       # User message
-    SYSTEM_MESSAGE = 2  # System message
-    AI_RESPONSE = 3     # AI response
-
-class DiagnosisStatus(IntEnum):
-    PENDING = 1         # Waiting for review
-    IN_REVIEW = 2       # Under medical team review
-    COMPLETED = 3       # Review completed
-    ARCHIVED = 4        # Archived
-
-class SymptomSeverity(IntEnum):
-    NONE = 1           # No symptoms
-    MILD = 2           # Mild symptoms
-    MODERATE = 3       # Moderate symptoms
-    SEVERE = 4         # Severe symptoms
-    CRITICAL = 5       # Critical symptoms 
+class SymptomStatus(str, Enum):
+    """症狀狀態"""
+    NULL = "null"      # 未記錄
+    YES = "yes"       # 有此症狀
+    NO = "no"         # 無此症狀 
